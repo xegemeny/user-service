@@ -15,5 +15,5 @@ public class Role {
     private Long id;
 
     @Column(unique = true, nullable = false)
-    private String name; // Örnek: ROLE_USER, ROLE_ADMIN
+    private String name;
 }

@@ -4,6 +4,7 @@ import jakarta.servlet.http.HttpServletResponse;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.http.HttpMethod;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.dao.DaoAuthenticationProvider; // Keep this import
 import org.springframework.security.config.annotation.authentication.configuration.AuthenticationConfiguration;
@@ -35,12 +36,11 @@ public class SecurityConfig {
         return new BCryptPasswordEncoder();
     }
 
-    // Authentication provider (şifre doğrulama + kullanıcı bulma)
     @Bean
     public DaoAuthenticationProvider authenticationProvider() {
         DaoAuthenticationProvider provider = new DaoAuthenticationProvider();
         provider.setUserDetailsService(userDetailsService);
-        provider.setPasswordEncoder(passwordEncoder()); // Uses the passwordEncoder bean
+        provider.setPasswordEncoder(passwordEncoder());
         return provider;
     }
 
@@ -53,8 +53,9 @@ public class SecurityConfig {
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
         return http.csrf(csrf -> csrf.disable())
                 .authorizeHttpRequests(auth -> auth
-                        .requestMatchers("/api/auth/**").permitAll() // Login/Register açık
-                        .requestMatchers("/api/test/secured").hasRole("ADMIN") // JWT ile ADMIN yetkili girsin
+                        .requestMatchers(HttpMethod.POST, "/api/auth/register").permitAll()
+                        .requestMatchers("/api/auth/**").permitAll()
+                        .requestMatchers("/api/test/secured").hasRole("ADMIN")
                         .anyRequest().authenticated()
                 )
                 .sessionManagement(session -> session
@@ -62,7 +63,6 @@ public class SecurityConfig {
                 )
                 .authenticationProvider(authenticationProvider())
                 .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class)
-                // ↓↓↓ BURAYA EKLE
                 .exceptionHandling(exception ->
                         exception.authenticationEntryPoint((request, response, authException) -> {
                             System.out.println("Yetkisiz giriş: " + authException.getMessage());

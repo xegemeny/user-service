@@ -47,7 +47,6 @@ public class AuthController {
     @Autowired
     private CustomUserDetailsService customUserDetailsService;
 
-
     @PostMapping("/login")
     public AuthResponse login(@RequestBody AuthRequest request) {
         System.out.println("Login denemesi: " + request.getUsername() + " / " + request.getPassword());
@@ -70,35 +69,32 @@ public class AuthController {
 
         return new AuthResponse(token, roles);
     }
-    
+
     @PostMapping("/register")
-    public AuthResponse register(@RequestBody RegisterRequest request) {
-        if (userRepository.findByUsername(request.getUsername()).isPresent()) {
+    public AuthResponse register(@RequestBody RegisterRequest req) {
+        if (userRepository.findByUsername(req.getUsername()).isPresent()) {
             throw new RuntimeException("Bu kullanıcı adı zaten mevcut!");
         }
-
         User user = new User();
-        user.setUsername(request.getUsername());
-        user.setPassword(passwordEncoder.encode(request.getPassword())); // şifreyi hashle
+        user.setUsername(req.getUsername());
+        user.setPassword(passwordEncoder.encode(req.getPassword()));
 
         Role userRole = roleRepository.findByName("ROLE_USER")
                 .orElseThrow(() -> new RuntimeException("ROLE_USER bulunamadı"));
         user.getRoles().add(userRole);
-
         userRepository.save(user);
 
-        List<String> roles = List.of("ROLE_USER");
+        UserDetails ud = customUserDetailsService
+                .loadUserByUsername(req.getUsername());
 
-        UserDetails userDetails = org.springframework.security.core.userdetails.User
-                .withUsername(user.getUsername())
-                .password(user.getPassword())
-                .authorities(roles.toArray(new String[0]))
-                .build();
-
-        String token = jwtService.generateToken(new HashMap<>(), userDetails);
+        String token = jwtService.generateToken(ud);
+        List<String> roles = ud.getAuthorities().stream()
+                .map(GrantedAuthority::getAuthority)
+                .toList();
 
         return new AuthResponse(token, roles);
     }
+
 
     @GetMapping("/me")
     public ResponseEntity<UserDto> getProfile() {
@@ -116,7 +112,6 @@ public class AuthController {
         UserDto userDto = new UserDto(user.getUsername(), roles);
         return ResponseEntity.ok(userDto);
     }
-
 
 
 }

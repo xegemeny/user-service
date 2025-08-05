@@ -16,7 +16,7 @@ import java.util.Base64;
 
 @Service
 public class JwtService {
-    private static final String SECRET = "my-very-secret-key-which-is-32-byte!"; // tam 32 karakter!
+    private static final String SECRET = "my-very-secret-key-which-is-32-byte!";
     private static final Key SECRET_KEY = Keys.hmacShaKeyFor(SECRET.getBytes());
 
 
